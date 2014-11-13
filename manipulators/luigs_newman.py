@@ -47,7 +47,7 @@ class LNmanipulator(manipulator, serial_device):
         self.axisname = axisname
         # Set the last axis to be the approach axis 
         self.approachAxis = axislist[-1]
-        
+        naxis = len(axislist)
         self.position = np.empty(naxis)
         self.update_position(range(1,naxis + 1))
         return None
@@ -72,7 +72,7 @@ class LNmanipulator(manipulator, serial_device):
         response = None
         self.flush_device()
         # start communication
-        reply = self._write_read(self.STX)
+        reply = self._write_read(STX)
         if (DLE in reply) or (ACK in reply):
             # send command and data link exchange
             reply = self._write_read(STX + cmd + 

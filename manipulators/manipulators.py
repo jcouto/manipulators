@@ -8,19 +8,19 @@ import serial
 
 from decimal import Decimal
 
-STX = 0x02
-ETX = 0x03
-EOT = 0x04
-ACK = 0x06
+STX = '\x02'
+ETX = '\x03'
+EOT = '\x04'
+ACK = '\x06'
 CR = serial.CR #\x13
 LF = serial.LF #\x10, \n
-NAK = 0x15
-DLE = 0x10
-ETB = 0x17
-ESC = 0x1b
+NAK = '\x15'
+DLE = '\x10'
+ETB = '\x17'
+ESC = '\x1b'
 
 
-class serial_device():
+class serial_device(object):
     # 100ms port timeout
     port_timeout =  100e-3
     wait_time =  20e-3
@@ -53,15 +53,22 @@ class serial_device():
 
     def _write_read(self,string):
         '''Low level write wait and read'''
-        self.dev.write(string + CR)
+        try:
+            self.dev.write(string + CR)
+        except:
+            print('An error occurred when writing to serial.')
+            print('Closing device.')
+            self.close_device()
         time.sleep(self.wait_time)
         reply = self.dev.read(self.dev.inWaiting())
         return reply
+
 
     def close_device(self):
         if self.dev is None:
             print('Device already closed.')
         else: 
+            print('Closing device ({0}).'.format(self.dev.port))            
             self.dev.close()
             self.dev = None
             
@@ -78,5 +85,9 @@ class manipulator():
     approachAxis =  None
     
     def _init_logger(self):
-        self.log =  lambda(txt):[sys.stdout.write('{0}: {1}.\n'.format(self.name), txt),  sys.stdout.flush()]
-                        
+        def write_flush(txt):
+            sys.stdout.write(txt)
+            sys.stdout.flush()       
+        self.log =  lambda(txt):write_flush('{0}: {1}.\n'.format(self.name, txt))
+                                 
+
