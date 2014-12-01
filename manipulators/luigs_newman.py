@@ -9,7 +9,6 @@ class LNmanipulator(manipulator, serial_device):
     port = None
     baudrate = 19200
     name =  'Luigs and Newman'
-
     def __init__(self, port =  None,
                  axislist = [1, 2, 3],
                  axisname =  ['x', 'y', 'z']):
@@ -77,7 +76,6 @@ class LNmanipulator(manipulator, serial_device):
                                      DLE + ETX)
             if (DLE in reply) or (ACK in reply) :
                 response = self._write_read(DLE)
-                # print self._write_read(self.ACK)
             else:
                 log('Device not ready to send data.\n')
         else:
@@ -130,22 +128,27 @@ class LNmanipulator(manipulator, serial_device):
         # There has to be a better way to do this...
         return '{0:0=+9.2f}'.format(microsteps)
 
-    def moveXYZ(self,new_position = None, rel = True, speed = 'F'):
-        if new_position is None:
+    def move(self, position = None, relative = True, speed = None):
+        
+        if speed is None:
+            if self.speed == 'fast':
+                speed = 'F'
+            else:
+                speed = 'S'
+        if position is None:
             log('LNmanipulator: Must specify new position.\n')
             return
         self.update_position()
-        if rel:
-            for ax in range(len(new_position)):
-                if new_position[ax] != 0:
-                    microsteps = self.convert2stepString(new_position[ax])
+        if relative:
+            for ax in range(len(position)):
+                if position[ax] != 0:
+                    microsteps = self.convert2stepString(position[ax])
                     self.send_command('#{0}!D{1}{2}'.format(self.axislist[ax],
                                                             speed, microsteps))
-
         else:
-            for ax in range(len(new_position)):
-                if not new_position[ax] == self.position[ax]:
-                    microsteps = self.convert2stepString(new_position[ax])
+            for ax in range(len(position)):
+                if not position[ax] == self.position[ax]:
+                    microsteps = self.convert2stepString(position[ax])
                     self.send_command('#{0}!G{1}{2}'.format(self.axislist[ax],
                                                             speed, microsteps))
 

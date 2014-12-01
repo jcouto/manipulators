@@ -85,7 +85,7 @@ class manipulator():
     axislist =  []
     axisname =  []
     approachAxis =  None
-    speed = 'slow'
+    speed = 'fast'
     
     def _init_logger(self):
         def write_flush(txt):
@@ -93,16 +93,23 @@ class manipulator():
             sys.stdout.flush()       
         self.log =  lambda(txt):write_flush('{0}: {1}.\n'.format(self.name, txt))
                                  
-    def zeroAxis(self, axis):
+    def zero(self):
         pass
 
     def setSpeed(self, speed):
         pass
     
-    def moveAbs(self, pos):
+    def move(self, position = None, relative = True):
         pass
 
     def setSpeed(self, speed = 'slow'):
-        pass
+        self.speed = speed
+
+    def switchSpeed(self):
+        if self.speed == 'slow':
+            self.speed = 'fast'
+        else:
+            self.speed = 'slow'
+            
 
         
