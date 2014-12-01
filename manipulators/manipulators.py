@@ -74,6 +74,10 @@ class serial_device(object):
         self.dev.flushInput()
         self.dev.flushOutput()
     
+    def close(self):
+        self.close_device()
+
+    
 class manipulator():
     position =  []
     angle =  []
@@ -100,3 +104,5 @@ class manipulator():
 
     def setSpeed(self, speed = 'slow'):
         pass
+
+        

@@ -43,7 +43,7 @@ class LNmanipulator(manipulator, serial_device):
         self.approachAxis = axislist[-1]
         naxis = len(axislist)
         self.position = np.empty(naxis)
-        self.update_position(range(1,naxis + 1))
+        self.update_position()
         return None
 
     def computeBCC(self,string):
@@ -62,6 +62,9 @@ class LNmanipulator(manipulator, serial_device):
         for ax in axis:
             self.send_command('#{0}!@S'.format(ax))
 
+    def zero(self):
+        self.zero_axis(self.axislist)
+            
     def send_command(self, cmd, wait_time = 40.0e-6):
         response = None
         self.flush_device()
@@ -92,7 +95,7 @@ class LNmanipulator(manipulator, serial_device):
     def decode_position(self, string):
         # Check code
         if not (self.computeBCC(string[:-4])==string[:-2][-2:]):
-            log('LNmanipulator: Checksum not correct [{0},{1}].\n'.format(
+            self.log('LNmanipulator: Checksum not correct [{0},{1}].\n'.format(
                 string[:-4],string[:-2][-2:]))
             raise ValueError
         axis = self.find_axis(string[:-4])
@@ -107,16 +110,16 @@ class LNmanipulator(manipulator, serial_device):
             else:
                 position = (tmp[0] + 1)*5.0 + (50 - tmp[1])*0.1            
         else:
-            log('LNmanipulator: Could not find axis in reply.\n')
+            self.log('LNmanipulator: Could not find axis in reply.\n')
             raise ValueError
         return axis,position
 
     def update_position(self):
-        for i in self.axislist:
+        for j,i in enumerate(self.axislist):
             pos_cmd = lambda axis: '#{0}?Z'.format(axis)
             reply = self.send_command(pos_cmd(i))
             ax,position = self.decode_position(reply)
-            self.position[ax-1] = position
+            self.position[j] = position
 
     def convert2stepString(self, X):
         if not X%5.0:
@@ -131,19 +134,21 @@ class LNmanipulator(manipulator, serial_device):
         if new_position is None:
             log('LNmanipulator: Must specify new position.\n')
             return
+        self.update_position()
         if rel:
             for ax in range(len(new_position)):
                 if new_position[ax] != 0:
                     microsteps = self.convert2stepString(new_position[ax])
-                    self.send_command('#{0}!D{1}{2}'.format(ax+1, speed, microsteps))
+                    self.send_command('#{0}!D{1}{2}'.format(self.axislist[ax],
+                                                            speed, microsteps))
 
         else:
             for ax in range(len(new_position)):
-                if new_position[ax] != self.position[ax]:
+                if not new_position[ax] == self.position[ax]:
                     microsteps = self.convert2stepString(new_position[ax])
-                    self.send_command('#{0}!G{1}{2}'.format(ax+1, speed, microsteps))
-        self.update_position()
-        return self.position
+                    self.send_command('#{0}!G{1}{2}'.format(self.axislist[ax],
+                                                            speed, microsteps))
+
 
     def handle_error(self, code):
         errorcodes =  { 'F01': 'Invalid character detected', 
