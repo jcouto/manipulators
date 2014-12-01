@@ -6,8 +6,6 @@ import numpy as np
 import re
 import serial
 
-from decimal import Decimal
-
 STX = '\x02'
 ETX = '\x03'
 EOT = '\x04'
@@ -83,6 +81,7 @@ class manipulator():
     axislist =  []
     axisname =  []
     approachAxis =  None
+    speed = 'slow'
     
     def _init_logger(self):
         def write_flush(txt):
@@ -90,4 +89,14 @@ class manipulator():
             sys.stdout.flush()       
         self.log =  lambda(txt):write_flush('{0}: {1}.\n'.format(self.name, txt))
                                  
+    def zeroAxis(self, axis):
+        pass
 
+    def setSpeed(self, speed):
+        pass
+    
+    def moveAbs(self, pos):
+        pass
+
+    def setSpeed(self, speed = 'slow'):
+        pass

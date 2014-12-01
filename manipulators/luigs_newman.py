@@ -8,7 +8,7 @@ from .manipulators import *
 class LNmanipulator(manipulator, serial_device):
     port = None
     baudrate = 19200
-    name = ''
+    name =  'Luigs and Newman'
 
     def __init__(self, port =  None,
                  axislist = [1, 2, 3],
@@ -17,9 +17,7 @@ class LNmanipulator(manipulator, serial_device):
     Opens a connection through a serial port to a Luigs and Newman manipulator
     Tested with the SM 001 manipulator.
         '''
-        self.name =  'LNmanipulator'
         self._init_logger()
-        
         if port is None:
             self.log('No port specified')
             raise ValueError
@@ -35,13 +33,9 @@ class LNmanipulator(manipulator, serial_device):
                           'writeTimeout': None}
         try: 
             self.open_device( **portarguments)
-        except ValueError:
-            self.log('Bad parameter. Could not open device')
-            raise ValueError
-        except serial.SerialException:
-            log('Bad port or wrongly configured.' +
-                ' Could not open device')
-            raise ValueError
+        except: 
+            self.log('Could not open device')
+            raise
         # Set the axis labels and position
         self.axislist =  axislist
         self.axisname = axisname
@@ -117,8 +111,8 @@ class LNmanipulator(manipulator, serial_device):
             raise ValueError
         return axis,position
 
-    def update_position(self,axislist=[1,2,3]):
-        for i in axislist:
+    def update_position(self):
+        for i in self.axislist:
             pos_cmd = lambda axis: '#{0}?Z'.format(axis)
             reply = self.send_command(pos_cmd(i))
             ax,position = self.decode_position(reply)

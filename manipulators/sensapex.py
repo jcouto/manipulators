@@ -9,15 +9,12 @@
 # SensaPex Serial Comamnds
 DEF_DEV_ID = 0x31
 DEF_CU_ID = 0x0F
-
-STX = 0x02
-ETX = 0x03
 # Functions
 WRITE_COMMAND_REG = 0x30   # '0'
 READ_STATUS_REG = 0x31	   # '1'
-WRITE_SPEED_REG = 0x32	   #'2'
-WRITE_DATA_REG = 0x33	   #'3'
-READ_DATA_REG = 0x34       #'4'
+WRITE_SPEED_REG = 0x32	   # '2'
+WRITE_DATA_REG = 0x33	   # '3'
+READ_DATA_REG = 0x34       # '4'
 # Commands
 GO_ZERO_POSITION = 1
 CALIBRATE = 2
@@ -119,29 +116,44 @@ class sensapex_manipulator(manipulator, serial_device):
     name = 'SensaPEX'
 
     def __init__(self, port =  None,
-                 axislist = [1, 2, 3],
+                 device = 1,
                  axisname =  ['x', 'y', 'z']):
-        '''sensapex manipulator object.
-    Opens a connection through a serial port to a Luigs and Newman manipulator
-    Tested with the SM 001 manipulator.
+        '''SensaPEX manipulator object.
+    Opens a connection through a serial port to a SENSAPEX manipulator
         '''
-        self.name =  'SensaPEX manipulator'
         self._init_logger()
-        
         if port is None:
             self.log('No port specified')
             raise ValueError
         self.port =  port
+        # Open serial connection
+        portarguments =  {'bytesize': 8,
+                          'parity': serial.PARITY_EVEN,
+                          'stopbits': 1,
+                          'xonxoff': False,
+                          'rtscts': False,
+                          'dsrdtr': False,
+                          'timeout': None,
+                          'writeTimeout': None}
+        try: 
+            self.open_device( **portarguments)
+        except: 
+            self.log('Could not open device')
+            raise
         
-        serial = self.serial
         # Open serial connection
         # Set the axis labels and position
-        self.axislist =  axislist
+        self.axislist =  [1, 2, 3]
         self.axisname = axisname
-        # Set the last axis to be the approach axis 
-        self.approachAxis = axislist[-1]
 
         self.position = np.empty(naxis)
-#        self.update_position(range(1,naxis + 1))
+        self.update_position(range(1,naxis + 1))
         return None
+
+    def update_position(self):
+        for i in self.axislist:
+            pos_cmd = lambda axis: '#{0}?Z'.format(axis)
+            reply = self.send_command(pos_cmd(i))
+            ax,position = self.decode_position(reply)
+            self.position[ax-1] = position
 
