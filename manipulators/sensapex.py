@@ -1,18 +1,18 @@
-
 #! /usr/bin/env python
 # Python scripts to control sensapex manipulators
 # Adapted from the code of:
 #   Brendan Callahan, Alex Chubykin
 #   The Picower Institute for Learning and Memory Massachusetts Institute of Technology
 #
+#Joao Couto 2015
 
-# SensaPex Serial Comamnds
+# SensaPex Serial Commands; these are in hexadecimal so that bitwise operations are easier...
 DEF_DEV_ID = 0x31
 DEF_CU_ID = 0x0F
 # Functions
 WRITE_COMMAND_REG = 0x30   # '0'
-READ_STATUS_REG = 0x31	   # '1'
-WRITE_SPEED_REG = 0x32	   # '2'
+READ_STATUS_REG = 0x31     # '1'
+WRITE_SPEED_REG = 0x32     # '2'
 WRITE_DATA_REG = 0x33	   # '3'
 READ_DATA_REG = 0x34       # '4'
 # Commands
@@ -109,7 +109,7 @@ VERSION_MINOR_REG = 0x2F # 47
 #define msg_frame_size sizeof(msg_frame_t)
 #define msg_frame_data_size (msg_frame_size-6)
 
-class sensapex_manipulator(manipulator, serial_device):
+class sensapex(manipulator, serial_device):
     port = None
     port_timeout = 500
     baudrate = 115200
@@ -145,7 +145,7 @@ class sensapex_manipulator(manipulator, serial_device):
         # Set the axis labels and position
         self.axislist =  [1, 2, 3]
         self.axisname = axisname
-
+        self.device = device
         self.position = np.empty(naxis)
         self.update_position(range(1,naxis + 1))
         return None
@@ -157,3 +157,77 @@ class sensapex_manipulator(manipulator, serial_device):
             ax,position = self.decode_position(reply)
             self.position[ax-1] = position
 
+ret = umanipulatorctl_read(hndl,dev, X_POSITION_REG);
+
+    def send_command(self, cmd, wait_time = 40e-6):
+        self.flush_device()
+        msg = STX + cmd + self.checksum(cmd) + ETX
+        msg = STX + cmd + self.computeBCC(cmd) + ETX
+        reply = self._write_read(msg)
+
+        try:
+            del msg
+            msg['device'] = reply[1]
+            msg['command'] = reply[2]
+            msg['address'] = reply[3:5]
+            msg['data'] = reply[5:9]
+        except:
+            print('Could not read message from device {0}.'.format(reply))
+            return False
+        print msg
+        return msg
+
+    def update_position(self):
+        for motor in range(0,3):
+            if motor == 0:
+                address = "0A"
+            elif motor == 1:
+                address = "08"
+            elif motor == 2:
+                address = "09"
+                
+                
+            message = int(''.join(self.talk(str(dev)+"4"+address+"0000")[5:9]),16)*self.stepLengthUM
+            print "MESSAGE: ",message
+            
+            if self.parent != None:
+                print "##################MESSAGE#########################"
+                print self.parent.motorcoordinates
+                self.parent.motorcoordinates[self.unitID][dev-1][motor]=copy.deepcopy(message)
+                
+    def computeBCC(self,string):
+        ''' Compute the BCC for the LN manipulator'''
+        xor = reduce(np.bitwise_xor,map(lambda x: ord(x),string))
+        # is 8 bit?
+        if len(np.binary_repr(xor)) <= 8:
+            hiNibble = xor >> 4
+            lowNibble = xor & 0x0F
+        else:
+            log('String XOR is not 8 bit\n')
+            raise Exception
+        return chr(int('30',16) + hiNibble) + chr(int('30',16)+ lowNibble)
+
+    def checksum(self, message):
+        # Compute checksum for sensapex
+        # Can be simplified and improved!!
+        crc = 0xFFFF
+        
+        for msgchar in range (0,len(message)):
+            crc = ((0xFF00 & crc) | (ord(message[msgchar]) & 0x00FF) ^ (crc & 0x00FF))
+            for lask in range (8,0,-1):
+                if (crc & 0x0001) == 0:
+                    crc >>=1
+                else:
+                    crc >>=1
+                    crc ^= 0xA001
+                    
+        crcstr = hex(crc)[2:]
+        crcupper = ""
+        for charnum in range (0,len(crcstr)):
+            crcupper += crcstr[charnum].upper()
+            
+        if len(crcupper) != 4:
+            for i in range (len(crcupper),4):
+                crcupper = "0"+crcupper
+        
+        return crcupper

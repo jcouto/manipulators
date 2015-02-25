@@ -2,10 +2,11 @@
 # Scripts to control Luigs and Newman manipulators
 # Tested on the SM 001
 #
+# Joao Couto 2014
 
 from .manipulators import *
 
-class LNmanipulator(manipulator, serial_device):
+class ln(manipulator, serial_device):
     port = None
     baudrate = 19200
     name =  'Luigs and Newman'
